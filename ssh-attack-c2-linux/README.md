@@ -136,3 +136,5 @@ The compromise demonstrates a full attack chain:
 * Implement EDR solutions
 * Monitor execution in sensitive directories (`/tmp`)
 
+## 📎 Full Report
+[Download Full Incident Report](./linux-incident-ssh-c2-analysis.pdf)
