@@ -116,6 +116,19 @@ id="0d62vb"
 
 ## 🧠 Attack Summary
 
+## 🎯 SOC Analyst Perspective
+
+From a defensive standpoint, this incident highlights the importance of correlating multiple data sources:
+
+* SSH logs revealed brute force activity and unauthorized access
+* Process monitoring identified execution of suspicious scripts
+* Network analysis exposed an active C2 channel
+* File access confirmed potential data exposure
+
+This type of correlation is critical in real SOC environments, where isolated events may not appear malicious until analyzed together.
+
+The incident demonstrates how lack of monitoring and control across authentication, execution, and network layers enables full system compromise.
+
 The attacker gained access via SSH brute force, executed a malicious script, and established a reverse connection to maintain remote control.
 
 The compromise demonstrates a full attack chain:
