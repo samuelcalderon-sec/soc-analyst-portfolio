@@ -136,8 +136,3 @@ The compromise demonstrates a full attack chain:
 * Implement EDR solutions
 * Monitor execution in sensitive directories (`/tmp`)
 
-
-
-## 📎 Full Report
-
-(Upload PDF and link here)
