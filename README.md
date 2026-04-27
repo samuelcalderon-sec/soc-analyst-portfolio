@@ -16,6 +16,8 @@ Focused on practical cybersecurity skills including:
 
 ## 🚨 Featured Projects
 
+## 🚨 Featured Projects
+
 ### 🔍 RAT C2 Traffic Analysis (PCAP Investigation)
 
 * Identified Command & Control (C2) communication
@@ -24,6 +26,18 @@ Focused on practical cybersecurity skills including:
 * Tools: Wireshark
 
 📁 [View Project](./rat-c2-pcap-analysis)
+
+
+### 🐧 Linux Incident Analysis – SSH Attack & C2 Activity
+
+* Detected SSH brute force and unauthorized access
+* Identified malicious process execution in `/tmp`
+* Correlated logs, processes, and network connections
+* Detected active C2 channel via non-standard port
+* Extracted IoCs and reconstructed full attack chain
+
+📁 [View Project](./ssh-attack-c2-linux)
+
 
 
 
