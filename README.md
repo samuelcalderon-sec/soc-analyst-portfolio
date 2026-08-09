@@ -2,7 +2,7 @@
 
 ## 👨‍💻 About Me
 
-Aspiring SOC Analyst with hands-on experience in incident response, network traffic analysis, and threat detection.
+SOC Analyst with hands-on experience in incident response, network traffic analysis, and threat detection.
 
 Focused on practical cybersecurity skills including:
 
@@ -10,7 +10,7 @@ Focused on practical cybersecurity skills including:
 * Network traffic analysis (Wireshark, PCAP)
 * Threat detection & IoC identification
 * Process and connection correlation
-* Basic malware behavior analysis
+* malware behavior analysis
 
 
 
