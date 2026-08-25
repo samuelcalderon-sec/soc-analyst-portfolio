@@ -1,136 +1,107 @@
-🛡️ RAT C2 Traffic Analysis (PCAP Investigation)
+# RAT C2 PCAP Analysis
 
-📌 Overview
+## Overview
 
-This project presents a network traffic analysis performed on a PCAP file following a SIEM alert indicating suspicious outbound communication.
+This lab focuses on the analysis of network traffic associated with a suspected Remote Access Trojan (RAT) using a PCAP file and Wireshark.
 
-The investigation focuses on identifying potential Command and Control (C2) activity associated with a Remote Access Trojan (RAT), specifically NetSupport Manager.
+The investigation simulates a SOC analyst reviewing captured network traffic to identify suspicious communication, determine the compromised host, identify the external C2 infrastructure, and reconstruct the observed communication pattern.
 
+The analysis focuses on network-based evidence rather than malware reverse engineering.
 
+## Investigation Objective
 
-🎯 Objective
+The main objectives of the investigation were to:
 
-* Identify the compromised host within the internal network
-* Analyze suspicious outbound traffic
-* Detect C2 communication patterns
-* Extract Indicators of Compromise (IoCs)
-* Reconstruct attacker activity
+- Identify suspicious network communications.
+- Determine the internal host involved in the activity.
+- Identify the external C2 server.
+- Analyze the communication pattern between the host and the remote server.
+- Identify indicators of compromise (IOCs).
+- Determine whether the traffic is consistent with C2 activity.
+- Reconstruct the relevant network activity from the PCAP.
 
+## Scenario
 
+The captured traffic contains communication between an internal Windows host and an external IP address associated with suspected RAT activity.
 
-🌐 Environment
+The relevant network information identified during the investigation was:
 
-* Network: 10.2.28.0/24
-* Analysis tool: Wireshark
-* Protocols observed: DNS, HTTP, TCP, SMB2
-* Suspected malware: NetSupport Manager RAT
+| Indicator | Value |
+|---|---|
+| Internal Network | `10.2.28.0/24` |
+| Suspected Host | `10.2.28.88` |
+| External C2 IP | `45.131.214.85` |
+| Protocol | HTTP |
+| User-Agent | `NetSupport Manager/1.3` |
+| Server | `NetSupport Gateway/1.92` |
+| HTTP Endpoint | `/fakeurl.htm` |
+| Observed Commands | `CMD=POLL`, `CMD=ENCD` |
 
+## Methodology
 
+The investigation was conducted using Wireshark and followed a network-forensics workflow:
 
-🔍 Investigation Process
+1. Identify internal hosts communicating with external systems.
+2. Investigate suspicious external destinations.
+3. Filter and inspect HTTP traffic.
+4. Follow TCP streams to reconstruct communications.
+5. Analyze HTTP requests, responses, headers, and parameters.
+6. Identify recurring communication patterns.
+7. Extract relevant IOCs.
+8. Correlate the observed traffic with known C2 characteristics.
+9. Reconstruct the observed activity and determine its security relevance.
 
-1. Initial Traffic Inspection
+## Key Findings
 
-* Opened PCAP in Wireshark
-* Identified high traffic volume from host **10.2.28.88**
-* External suspicious IP detected: **45.131.214.85**
+The investigation identified repeated HTTP communication between the internal host `10.2.28.88` and the external IP `45.131.214.85`.
 
+The traffic included HTTP POST requests to `/fakeurl.htm` and parameters such as `CMD=POLL` and `CMD=ENCD`.
 
+The communication showed a recurring pattern consistent with beaconing, where the internal host periodically communicated with the same external infrastructure.
 
-2. Suspicious Communication Analysis
+The observed `NetSupport Manager/1.3` User-Agent and `NetSupport Gateway/1.92` server information provided additional context for identifying the traffic as associated with NetSupport-based remote access activity.
 
-* Repeated HTTP POST requests observed
-* Endpoint: `/fakeurl.htm`
-* Content-Type: `application/x-www-form-urlencoded`
+The combination of the repeated communication pattern, external destination, HTTP POST traffic, and NetSupport-related indicators provided evidence of a suspicious C2 communication channel.
 
-➡️ Indicates potential data exfiltration
+## Indicators of Compromise
 
+| Type | Indicator |
+|---|---|
+| Internal IP | `10.2.28.88` |
+| External IP | `45.131.214.85` |
+| HTTP Endpoint | `/fakeurl.htm` |
+| User-Agent | `NetSupport Manager/1.3` |
+| Server | `NetSupport Gateway/1.92` |
+| Parameters | `CMD=POLL`, `CMD=ENCD` |
 
+## SOC Analyst Skills Demonstrated
 
-3. Beaconing Detection
+- PCAP analysis
+- Wireshark investigation
+- Network traffic analysis
+- C2 traffic identification
+- Beaconing analysis
+- TCP stream analysis
+- HTTP traffic investigation
+- IOC extraction
+- Network-based incident investigation
+- Attack activity reconstruction
 
-* Continuous periodic communication between:
+## Conclusion
 
-  * Internal host: 10.2.28.88
-  * External IP: 45.131.214.85
+The PCAP analysis identified suspicious and recurring HTTP communication between the internal host `10.2.28.88` and the external infrastructure `45.131.214.85`.
 
-➡️ Pattern consistent with C2 beaconing
+The observed communication pattern and NetSupport-related indicators are consistent with C2 activity associated with a remote access tool.
 
+The investigation demonstrates how a SOC analyst can use network telemetry to identify suspicious communications, extract actionable indicators, and reconstruct attacker-related activity from packet captures.
 
+## Full Investigation Report
 
-4. Deep Packet Inspection
+The complete investigation, including detailed evidence and analysis, is available in the accompanying report:
 
-Using "Follow TCP Stream":
+**`Incident-Analysis-C2-Traffic-PCAP.pdf`**
 
-* User-Agent identified:
+## Tools
 
-
-  NetSupport Manager/1.3
-
-* Server response:
-
-
-  NetSupport Gateway/1.92
-
-
-➡️ Confirms RAT infrastructure
-
-
-
-5. Command & Control Behavior
-
-Observed parameters:
-
-* `CMD=POLL` → host requesting commands
-* `CMD=ENCD` → encoded data exchange
-
-➡️ Active remote control channel established
-
-
-6. Host Identification
-
-* High packet volume (~550 packets)
-* Persistent connection with attacker infrastructure
-
-➡️ Compromised host identified as:
-
-10.2.28.88
-
-🚨 Indicators of Compromise (IoCs)
-
-* Malicious IP: `45.131.214.85`
-* Suspicious endpoint: `/fakeurl.htm`
-* User-Agent: `NetSupport Manager/1.3`
-* Behavior:
-
-  * HTTP POST beaconing
-  * Encoded data exchange
-  * Persistent outbound communication
-
-
-
-🧠 Attack Summary
-
-The compromised host establishes continuous outbound communication with a remote server acting as a Command and Control (C2).
-
-The malware uses HTTP POST requests to:
-
-* Send encoded data
-* Receive commands
-* Maintain persistence through beaconing
-
-This behavior confirms the presence of a Remote Access Trojan (RAT) infection.
-
-
-🛡️ Recommendations
-
-* Isolate affected host from network
-* Block malicious IP at firewall level
-* Perform full forensic analysis
-* Monitor for similar beaconing patterns
-* Deploy IDS/IPS and SIEM correlation rules
-
-
-📎 Full Report
-
-Detailed PDF report available in this repository.
+- Wireshark
+- PCAP network capture
