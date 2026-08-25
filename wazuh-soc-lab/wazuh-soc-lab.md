@@ -1,562 +1,280 @@
-\# Wazuh SOC / Blue Team Lab
+# Wazuh SOC / Blue Team Lab
 
+Hands-on **SOC / Blue Team laboratory** focused on security monitoring, detection, and investigation of suspicious activity on a Windows endpoint using **Wazuh 4.12.0** and **Sysmon**.
 
+The project reproduces, at laboratory scale, the workflow of a Tier 1 SOC analyst: telemetry generation, detection, alert triage, process and command-line analysis, event correlation, timeline reconstruction, impact assessment, MITRE ATT&CK mapping, and documentation of a defensible conclusion.
 
-Laboratorio práctico de \*\*SOC / Blue Team\*\* orientado a la monitorización, detección e investigación de actividad sospechosa sobre un endpoint Windows utilizando \*\*Wazuh 4.12.0\*\* y \*\*Sysmon\*\*.
+## Objective
 
+The primary objective was to build and operate a functional security monitoring and detection environment, demonstrating the ability to:
 
+* Generate and analyze real Windows telemetry.
+* Design and validate Wazuh detection rules.
+* Perform alert triage.
+* Analyze parent-child process relationships.
+* Investigate command lines and suspicious parameters.
+* Correlate events using `ProcessGuid` and `ParentProcessGuid`.
+* Reconstruct an activity timeline.
+* Decode obfuscated PowerShell commands.
+* Correlate endpoint telemetry with network validation.
+* Map observed behavior to MITRE ATT&CK.
+* Assess impact and determine a defensible classification.
+* Document evidence, limitations, inferences, and conclusions.
 
-El proyecto reproduce, a escala de laboratorio, el flujo de trabajo de un analista SOC de Nivel 1: generación de telemetría, detección, triage, análisis de procesos y líneas de comando, correlación de eventos, reconstrucción temporal, evaluación de impacto, mapeo MITRE ATT\&CK y documentación de una conclusión defendible.
+The objective was not to build an enterprise SIEM or develop advanced Wazuh/OpenSearch administration skills, but to demonstrate practical SOC analysis and operational capabilities.
 
+## Lab Architecture
 
-
-\## Objetivo
-
-
-
-El objetivo principal fue construir y operar un entorno funcional de monitoreo y detección de seguridad, demostrando la capacidad de:
-
-
-
-\* Generar y analizar telemetría real de Windows.
-
-\* Diseñar y validar reglas de detección en Wazuh.
-
-\* Realizar triage de alertas.
-
-\* Analizar relaciones padre/hijo entre procesos.
-
-\* Investigar líneas de comando y parámetros sospechosos.
-
-\* Correlacionar eventos mediante `ProcessGuid` y `ParentProcessGuid`.
-
-\* Reconstruir una línea de tiempo de actividad.
-
-\* Decodificar comandos PowerShell ofuscados.
-
-\* Correlacionar telemetría de endpoint con validación de red.
-
-\* Mapear comportamiento observado a MITRE ATT\&CK.
-
-\* Evaluar impacto y determinar una clasificación defendible.
-
-\* Documentar evidencia, limitaciones, inferencias y conclusiones.
-
-
-
-El objetivo no fue construir un SIEM empresarial ni desarrollar administración avanzada de Wazuh/OpenSearch, sino demostrar capacidades prácticas de análisis y operación SOC.
-
-
-
-\## Arquitectura del laboratorio
-
-
-
-El laboratorio estuvo compuesto por tres elementos principales:
-
-
+The laboratory consisted of three main components:
 
 ```text
-
 Kali Linux
-
 192.168.1.21
-
-&#x20;    │
-
-&#x20;    │ TCP/4444
-
-&#x20;    ▼
-
+     │
+     │ TCP/4444
+     ▼
 Windows Endpoint
-
 WIN10-SOC-ENDPOINT01
-
 Sysmon + Wazuh Agent
-
-&#x20;    │
-
-&#x20;    │ Sysmon telemetry
-
-&#x20;    ▼
-
+     │
+     │ Sysmon telemetry
+     ▼
 Wazuh SIEM
-
 Manager + Indexer/OpenSearch + Dashboard
-
 Ubuntu Server
-
 ```
 
+### Components
 
+| Component                     | Technology                      |
+| ----------------------------- | ------------------------------- |
+| SIEM                          | Wazuh 4.12.0                    |
+| SIEM Operating System         | Ubuntu Server 24.04.4           |
+| Endpoint                      | Windows                         |
+| Telemetry                     | Sysmon                          |
+| Agent                         | Wazuh Agent                     |
+| Offensive Simulation Platform | Kali Linux                      |
+| Network Validation            | Windows `netstat` + Kali Netcat |
 
-\### Componentes
+## Telemetry
 
+The primary telemetry source used throughout the investigation was **Sysmon Event ID 1 — Process Creation**, which was successfully ingested end-to-end into Wazuh.
 
+The investigation analyzed fields including:
 
-| Componente          | Tecnología                      |
+* `Image`
+* `ParentImage`
+* `CommandLine`
+* `ParentCommandLine`
+* `User`
+* `ParentUser`
+* `IntegrityLevel`
+* `ProcessId`
+* `ParentProcessId`
+* `ProcessGuid`
+* `ParentProcessGuid`
+* `SHA256`
+* UTC timestamps
 
-| ------------------- | ------------------------------- |
+A central element of the investigation was the use of `ProcessGuid` and `ParentProcessGuid` to validate parent-child process relationships. This made it possible to distinguish relationships that were actually confirmed from relationships that only appeared to belong to the same temporal sequence.
 
-| SIEM                | Wazuh 4.12.0                    |
+Sysmon Event ID 3 was enabled and confirmed on Windows, but it was not successfully ingested by Wazuh in this environment. Network activity was therefore validated independently using `netstat` on Windows and Netcat on Kali.
 
-| Sistema del SIEM    | Ubuntu Server 24.04.4           |
+## Detection Engineering
 
-| Endpoint            | Windows                         |
+Local Wazuh rules were configured to detect process behavior and command-line characteristics.
 
-| Telemetría          | Sysmon                          |
+| Rule     | Detection                                                  |
+| -------- | ---------------------------------------------------------- |
+| `100100` | `notepad.exe` process creation                             |
+| `100102` | PowerShell executed with `-EncodedCommand`                 |
+| `100104` | PowerShell spawned by `cmd.exe`                            |
+| `100105` | `cmd.exe` spawned by `notepad.exe`                         |
+| `100106` | Tuning exception to reduce legitimate Wazuh Agent activity |
 
-| Agent               | Wazuh Agent                     |
+Rules `100102`, `100104`, and `100105` were functionally validated through evidence collected during Incident 001.
 
-| Plataforma ofensiva | Kali Linux                      |
+The detection logic prioritized process relationships and command-line characteristics rather than relying exclusively on file names.
 
-| Validación de red   | Windows `netstat` + Kali Netcat |
+## Legitimate Activity Baseline
 
+Before executing the controlled incident scenario, legitimate activity was established as a baseline.
 
-
-\## Telemetría
-
-
-
-La principal fuente de telemetría utilizada durante la investigación fue \*\*Sysmon Event ID 1 — Process Creation\*\*, ingerida exitosamente de extremo a extremo en Wazuh.
-
-
-
-Entre los campos analizados estuvieron:
-
-
-
-\* `Image`
-
-\* `ParentImage`
-
-\* `CommandLine`
-
-\* `ParentCommandLine`
-
-\* `User`
-
-\* `ParentUser`
-
-\* `IntegrityLevel`
-
-\* `ProcessId`
-
-\* `ParentProcessId`
-
-\* `ProcessGuid`
-
-\* `ParentProcessGuid`
-
-\* `SHA256`
-
-\* Timestamp UTC
-
-
-
-Un elemento central del análisis fue el uso de `ProcessGuid` y `ParentProcessGuid` para validar relaciones padre/hijo. Esto permitió diferenciar relaciones de procesos realmente confirmadas de relaciones que únicamente parecían formar parte de la misma cadena temporal.
-
-
-
-Sysmon Event ID 3 fue habilitado y confirmado en Windows, pero no fue ingerido correctamente por Wazuh en este entorno. La actividad de red fue por ello validada de forma independiente mediante `netstat` en Windows y Netcat en Kali.
-
-
-
-\## Ingeniería de detección
-
-
-
-Se configuraron reglas locales de Wazuh orientadas principalmente a comportamiento de procesos y parámetros de línea de comando.
-
-
-
-| Regla    | Detección                                                                |
-
-| -------- | ------------------------------------------------------------------------ |
-
-| `100100` | Creación de `notepad.exe`                                                |
-
-| `100102` | PowerShell ejecutado con `-EncodedCommand`                               |
-
-| `100104` | PowerShell generado por `cmd.exe`                                        |
-
-| `100105` | `cmd.exe` generado por `notepad.exe`                                     |
-
-| `100106` | Ajuste de una excepción para reducir actividad legítima del agente Wazuh |
-
-
-
-Las reglas `100102`, `100104` y `100105` fueron validadas mediante evidencia obtenida durante el Incidente 001.
-
-
-
-El diseño priorizó relaciones entre procesos y características de la línea de comando en lugar de depender exclusivamente de nombres de archivos.
-
-
-
-\## Línea base
-
-
-
-Antes de ejecutar el escenario controlado se estableció una línea base de actividad legítima.
-
-
-
-Una ejecución normal de Notepad presentó la relación:
-
-
+A normal Notepad execution produced the following process relationship:
 
 ```text
-
 explorer.exe
-
-&#x20;   └── notepad.exe
-
+    └── notepad.exe
 ```
 
+The activity triggered rule `100100`, but was classified as **Benign / Expected** after additional context was analyzed: standard system path, Microsoft signature, expected parent process, user context, integrity level, and absence of suspicious child-process behavior.
 
+This validated a fundamental SOC analysis principle:
 
-La actividad disparó la regla `100100`, pero fue clasificada como \*\*Benigna / Esperada\*\* después de analizar contexto adicional: ruta estándar del sistema, firma de Microsoft, proceso padre esperado, usuario, nivel de integridad y ausencia de comportamiento hijo sospechoso.
+> A correctly triggered alert does not automatically represent a security incident.
 
+## Incident 001 — Controlled Investigation
 
+The primary case study was an authorized simulation of suspicious behavior on the Windows endpoint.
 
-Esto permitió validar una capacidad fundamental del análisis SOC:
-
-
-
-> Una alerta correctamente disparada no implica automáticamente un incidente de seguridad.
-
-
-
-\## Incidente 001 — Investigación controlada
-
-
-
-El caso principal del laboratorio fue una simulación autorizada de comportamiento sospechoso sobre el endpoint Windows.
-
-
-
-El escenario investigado involucró:
-
-
+The investigated scenario involved:
 
 ```text
-
 Notepad
-
-&#x20;  ↓
-
+   ↓
 CMD
-
-&#x20;  ↓
-
+   ↓
 PowerShell
-
-&#x20;  ↓
-
+   ↓
 PowerShell + -EncodedCommand
-
-&#x20;  ↓
-
+   ↓
 TCP connection → Kali Linux:4444
-
 ```
 
-
-
-Las etapas de ejecución fueron detectadas mediante las reglas locales:
-
-
+The execution stages were detected through the following local rules:
 
 ```text
-
 100105 → Notepad → CMD
-
 100104 → CMD → PowerShell
-
-100102 → PowerShell → EncodedCommand
-
+100102 → PowerShell + EncodedCommand
 ```
 
+The appearance of these indicators on the same endpoint and user within a relatively short time window justified detailed investigation during initial triage.
 
+## Encoded PowerShell Analysis
 
-La aparición de estos indicadores sobre el mismo endpoint y usuario, dentro de una ventana temporal reducida, justificó un análisis detallado durante el triage.
-
-
-
-\## Análisis del PowerShell codificado
-
-
-
-El comando observado utilizó:
-
-
+The observed command used:
 
 ```text
-
-\-EncodedCommand
-
+-EncodedCommand
 ```
 
-
-
-El contenido fue decodificado desde Base64/UTF-16LE y permitió identificar una conexión TCP hacia:
-
-
+The content was decoded from Base64/UTF-16LE and revealed a TCP connection to:
 
 ```text
-
 192.168.1.21:4444
-
 ```
 
+The command used `System.Net.Sockets.TcpClient` to establish a connection, maintain it for approximately 60 seconds, and then close it.
 
+The analysis determined that the code did not implement stream read/write operations through `NetworkStream`, remote command execution, or an interactive shell.
 
-El comando utilizó `System.Net.Sockets.TcpClient` para establecer, mantener durante aproximadamente 60 segundos y posteriormente cerrar la conexión.
+Therefore, the behavior was technically documented as a **controlled simulation of C2-like communication through a TCP connection**, rather than an interactive reverse shell or evidence of real C2 activity.
 
+## Critical Process Correlation Finding
 
+One of the most important findings of the investigation was that the telemetry **did not allow the entire sequence to be confirmed as a single continuous process-tree branch**.
 
-El análisis determinó que el código no implementaba lectura/escritura mediante `NetworkStream`, ejecución remota de comandos ni una shell interactiva.
-
-
-
-Por ello, el comportamiento fue documentado técnicamente como una \*\*simulación controlada de comunicación tipo C2 mediante una conexión TCP\*\*, y no como una reverse shell interactiva ni como evidencia de un C2 real.
-
-
-
-\## Hallazgo crítico de correlación
-
-
-
-Uno de los resultados más importantes de la investigación fue que la telemetría \*\*no permitió confirmar que todos los eventos formaran una única rama continua del árbol de procesos\*\*.
-
-
-
-Cada relación individual fue validada mediante `ProcessGuid` / `ParentProcessGuid`:
-
-
+Each individual relationship was validated using `ProcessGuid` / `ParentProcessGuid`:
 
 ```text
-
 Notepad → CMD
-
 CMD → PowerShell
-
 PowerShell → PowerShell + EncodedCommand
-
 ```
 
+However, the parent process GUIDs referenced at each stage did not match the intermediate processes documented in the previous stage.
 
+Therefore, the investigation did not claim a continuous process chain that the evidence could not demonstrate.
 
-Sin embargo, los GUID de los procesos padre utilizados en cada salto no coincidieron con los procesos intermedios documentados en el salto anterior.
+This finding demonstrates a fundamental investigation capability:
 
+**`ProcessId` / `ParentProcessId` alone are insufficient for reliable process-chain reconstruction; relationships must be validated using the identifiers provided by Sysmon.**
 
+## Evidence Correlation
 
-Por tanto, la investigación no afirmó una cadena continua que la evidencia no permitía demostrar.
+The investigation combined multiple sources of evidence:
 
+1. Wazuh alerts generated from Sysmon Event ID 1.
+2. `ProcessGuid` / `ParentProcessGuid` relationships.
+3. Command-line data.
+4. SHA256 hashes.
+5. UTC timestamps.
+6. Windows `netstat` validation.
+7. Direct observation of the connection through the Netcat listener on Kali.
 
+This multi-source correlation allowed the investigation to build a coherent interpretation of the observed behavior despite the network telemetry limitation in the SIEM.
 
-Este hallazgo demuestra una capacidad fundamental de investigación:
+## MITRE ATT&CK
 
+The observed behavior was mapped to:
 
+| Technique   | Name                                       | Evidence                                                                |
+| ----------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| `T1059.003` | Windows Command Shell                      | `cmd.exe` spawned by Notepad                                            |
+| `T1059.001` | PowerShell                                 | PowerShell execution from `cmd.exe` and subsequent PowerShell instances |
+| `T1027`     | Obfuscated/Compressed Files or Information | `-EncodedCommand` with Base64/UTF-16LE encoded content                  |
 
-\*\*ProcessId / ParentProcessId por sí solos no son suficientes para reconstruir de forma confiable una cadena de procesos; la relación debe validarse mediante los identificadores proporcionados por Sysmon.\*\*
+The TCP connection was not mapped to a specific Command and Control technique because the available evidence did not demonstrate an application-layer protocol, command exchange, or other behavior that would justify a more specific classification.
 
+## Incident Classification
 
+From a production perspective, the combination of:
 
-\## Correlación de evidencia
+* A non-administrative application spawning `cmd.exe`.
+* `cmd.exe` spawning PowerShell.
+* PowerShell executing encoded content.
+* An outbound TCP connection.
+* The same host and user context.
 
+would justify a high-priority investigation.
 
+Within this laboratory, the activity was deliberately generated and authorized.
 
-La investigación combinó múltiples fuentes:
-
-
-
-1\. Alertas Wazuh generadas a partir de Sysmon Event ID 1.
-
-2\. Relaciones `ProcessGuid` / `ParentProcessGuid`.
-
-3\. Líneas de comando.
-
-4\. Hashes SHA256.
-
-5\. Timestamps UTC.
-
-6\. Validación de la conexión mediante `netstat` en Windows.
-
-7\. Observación de la conexión en el listener Netcat de Kali.
-
-
-
-Esta correlación permitió construir una interpretación coherente del comportamiento observado pese a las limitaciones de telemetría de red del SIEM.
-
-
-
-\## MITRE ATT\&CK
-
-
-
-El comportamiento observado fue mapeado a:
-
-
-
-| Técnica     | Nombre                                     | Evidencia                                                                |
-
-| ----------- | ------------------------------------------ | ------------------------------------------------------------------------ |
-
-| `T1059.003` | Windows Command Shell                      | `cmd.exe` generado por Notepad                                           |
-
-| `T1059.001` | PowerShell                                 | Ejecución de PowerShell desde `cmd.exe` y otras instancias de PowerShell |
-
-| `T1027`     | Obfuscated/Compressed Files or Information | Uso de `-EncodedCommand` con contenido Base64/UTF-16LE                   |
-
-
-
-La conexión TCP no fue asignada a una técnica específica de Command and Control debido a que la evidencia disponible no demostró un protocolo de aplicación, intercambio de comandos ni otro comportamiento que justificara una clasificación más específica.
-
-
-
-\## Clasificación del incidente
-
-
-
-Desde una perspectiva de producción, la combinación de:
-
-
-
-\* Aplicación no administrativa generando `cmd.exe`.
-
-\* `cmd.exe` generando PowerShell.
-
-\* PowerShell ejecutando contenido codificado.
-
-\* Conexión TCP saliente.
-
-\* Mismo host y usuario.
-
-
-
-justificaría una investigación de alta prioridad.
-
-
-
-Dentro del laboratorio, la actividad fue deliberadamente generada y autorizada.
-
-
-
-\*\*Clasificación final:\*\*
-
-
+**Final classification:**
 
 ```text
+Benign / Authorized Security Validation
 
-Benigno / Validación de Seguridad Autorizada
-
-
-
-Disposición:
-
-Cerrado — Simulación de Incidente Controlada
-
+Disposition:
+Closed — Controlled Incident Simulation
 ```
 
+The detections were not classified as false positives. Rules correctly detected the behaviors they were designed to identify; the benign classification resulted from the authorized laboratory context.
 
+## Skills Demonstrated
 
-Las detecciones no fueron consideradas falsos positivos. Las reglas detectaron correctamente los comportamientos para los cuales fueron diseñadas; la clasificación benigna se debió al contexto autorizado del laboratorio.
+This project provided hands-on validation of skills related to:
 
+* SOC Level 1 operations
+* Security monitoring
+* SIEM operations
+* Windows security telemetry
+* Sysmon analysis
+* Process tree analysis
+* Parent-child process correlation
+* Command-line analysis
+* PowerShell analysis
+* Behavioral detection
+* Alert triage
+* Event correlation
+* Timeline reconstruction
+* IOC / IOA analysis
+* MITRE ATT&CK mapping
+* Host and network correlation
+* Incident classification
+* Incident response fundamentals
+* Technical security documentation
+* Evidence-based analysis
 
+## Limitations
 
-\## Capacidades demostradas
+The laboratory encountered technical limitations associated with deploying Wazuh/OpenSearch on resource-constrained infrastructure.
 
+Additionally, Sysmon Event ID 3 was confirmed on Windows but could not be successfully ingested by Wazuh in this environment. The investigation compensated for this limitation through direct and correlated validation using `netstat` and Netcat.
 
+These limitations were documented and considered during the incident assessment.
 
-Este proyecto permitió validar de forma práctica competencias relacionadas con:
+## Conclusions
 
+The laboratory demonstrated the ability to operate a Tier 1 SOC analytical workflow in a real laboratory environment, from telemetry generation and collection through detection, triage, correlation, reconstruction, MITRE ATT&CK mapping, and documentation of a defensible conclusion.
 
+The primary result was not simply the successful generation of alerts, but the ability to **distinguish confirmed evidence from inference**, identify a real discontinuity in the process chain, and avoid presenting a relationship as fact when the available telemetry could not confirm it.
 
-\* SOC Level 1 operations
+This demonstrated an evidence-based and behavior-oriented investigation approach rather than forcing the collected data to match a predefined attack narrative.
 
-\* Security monitoring
+## Full Technical Documentation
 
-\* SIEM operations
+The complete technical analysis, including methodology, environment configuration, evidence, detailed investigation, timeline, correlation, limitations, MITRE ATT&CK mapping, impact assessment, and conclusions is available in:
 
-\* Windows security telemetry
-
-\* Sysmon analysis
-
-\* Process tree analysis
-
-\* Parent-child process correlation
-
-\* Command-line analysis
-
-\* PowerShell analysis
-
-\* Behavioral detection
-
-\* Alert triage
-
-\* Event correlation
-
-\* Timeline reconstruction
-
-\* IOC / IOA analysis
-
-\* MITRE ATT\&CK mapping
-
-\* Host and network correlation
-
-\* Incident classification
-
-\* Incident response fundamentals
-
-\* Technical security documentation
-
-\* Evidence-based analysis
-
-
-
-\## Limitaciones
-
-
-
-Durante el proyecto se presentaron limitaciones asociadas a los recursos disponibles para el despliegue de Wazuh/OpenSearch.
-
-
-
-Adicionalmente, Sysmon Event ID 3 fue confirmado en Windows pero no pudo ser ingerido correctamente por Wazuh en este entorno. La investigación compensó esta limitación mediante validación directa y correlacionada utilizando `netstat` y Netcat.
-
-
-
-Estas limitaciones fueron documentadas y consideradas durante la evaluación del incidente.
-
-
-
-\## Conclusiones
-
-
-
-El laboratorio demostró la capacidad de operar un ciclo analítico SOC de Nivel 1 sobre un entorno real de laboratorio, desde la generación y recopilación de telemetría hasta la detección, triage, correlación, reconstrucción, mapeo MITRE ATT\&CK y documentación de una conclusión defendible.
-
-
-
-El principal resultado no fue únicamente la generación exitosa de alertas, sino la capacidad de \*\*distinguir evidencia confirmada de inferencias\*\*, identificar una discontinuidad real en la cadena de procesos y evitar presentar como hecho una relación que la telemetría no permitía confirmar.
-
-
-
-Esto permitió aplicar un enfoque de investigación basado en evidencia y comportamiento en lugar de asumir una narrativa de ataque predefinida.
-
-
-
-\## Documentación completa
-
-
-
-El análisis técnico completo, incluyendo metodología, configuración, evidencia, análisis detallado, línea de tiempo, correlación, limitaciones, MITRE ATT\&CK, evaluación de impacto y conclusiones se encuentra en:
-
-
-
-\[\*\*Informe Final del Laboratorio SOC\*\*](documentation/Informe-Final-Laboratorio-SOC.pdf)
-
-
-
+[**Final SOC Laboratory Report**](documentation/Informe-Final-Laboratorio-SOC.pdf)
