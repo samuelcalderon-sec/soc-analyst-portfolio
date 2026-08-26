@@ -1,153 +1,133 @@
-Linux Incident Analysis – SSH Attack & C2 Activity
+# Linux Incident Analysis – SSH Brute Force & C2
 
-## 📌 Overview
+## Overview
 
-This project simulates a real-world security incident in a Linux environment, where an attacker gains unauthorized access via SSH, executes malicious code, and establishes a Command and Control (C2) channel.
+This lab simulates a Linux security incident in a controlled virtual environment, focusing on the investigation of an SSH-based compromise and the subsequent establishment of a Command-and-Control (C2) channel.
 
-The investigation focuses on correlating logs, processes, and network connections to reconstruct the attack timeline.
+The investigation follows a SOC-oriented approach, correlating authentication logs, process activity, and network connections to reconstruct the attack chain from initial access to remote command execution and access to sensitive information.
 
+## Investigation Objective
 
+The main objectives of the investigation were to:
 
-## 🎯 Objective
+- Identify the initial access vector.
+- Detect and analyze SSH brute-force activity.
+- Identify the successful authentication associated with the compromise.
+- Investigate suspicious processes and files on the victim system.
+- Identify the C2 communication channel.
+- Correlate processes with network connections.
+- Identify Indicators of Compromise (IoCs).
+- Reconstruct the attack timeline.
+- Recommend security controls to mitigate similar attacks.
 
-* Detect unauthorized SSH access
-* Identify attacker activity post-compromise
-* Analyze process execution and persistence
-* Detect C2 communication
-* Extract Indicators of Compromise (IoCs)
+## Lab Environment
 
+| Component | Description |
+|---|---|
+| Attacker | Kali Linux |
+| Victim | Ubuntu Server 24.04 |
+| Network | Controlled virtual environment |
+| Remote Service | OpenSSH Server |
+| C2 Port | `4444` |
 
+Both machines were connected to the same isolated virtual network, allowing the attack scenario and subsequent investigation to be performed in a controlled environment.
 
-## 🖥️ Environment
+## Attack Chain
 
-* Attacker machine: Kali Linux
-* Victim machine: Ubuntu Server 24.04
-* Service exposed: SSH (OpenSSH)
-* Network: Controlled lab environment
+The investigation reconstructed the following sequence:
 
+`SSH Brute Force → Successful Authentication → Remote Access → Malicious Python Execution → C2 Channel → Remote Command Execution → Sensitive File Access`
 
+The attacker initially performed multiple failed SSH authentication attempts against the victim system. A subsequent successful authentication from the same source indicated the compromise of valid credentials.
 
-## ⏱️ Attack Timeline
+After gaining access, the attacker executed a Python script located at `/tmp/update.py`. The process established an outbound TCP connection to the attacker machine on port `4444`, creating a C2 communication channel.
 
-### 1. Initial Access (Brute Force)
+Through this channel, remote commands were executed on the compromised system, including access to sensitive information stored in the `/tmp` directory.
 
-* Multiple failed SSH login attempts detected
-* Successful login from attacker IP
+## Investigation Methodology
 
-➡️ Indicates credential compromise
+The investigation was based on host and network telemetry available within the simulated environment.
 
+The following evidence sources and commands were used:
 
+- `journalctl -u ssh` — SSH authentication log analysis.
+- `ps aux` — Process identification and analysis.
+- `ss -tnp` — Network connection and process correlation.
+- File analysis — Investigation of suspicious files and accessed data.
 
-### 2. Privilege Access
+The investigation correlated these sources to establish relationships between authentication events, process execution, network connections, and remote activity.
 
-* Attacker obtained shell access
-* Evidence of elevated privileges
+## Key Findings
 
+The investigation identified:
 
+- Multiple failed SSH authentication attempts consistent with brute-force activity.
+- A subsequent successful authentication from the attacker machine.
+- Execution of `python3` associated with `/tmp/update.py`.
+- An established TCP connection to the attacker machine on port `4444`.
+- Direct association between the network connection and the `python3` process.
+- Remote command execution through the established C2 channel.
+- Access to `/tmp/contrasenias.txt`, containing simulated sensitive information.
 
-### 3. Malicious Execution
+These findings allowed the attack sequence to be reconstructed from initial access through post-compromise activity.
 
-* Suspicious script created:
+## Indicators of Compromise
 
-id="q1k2zj"
-/tmp/update.py
+| Type | Indicator |
+|---|---|
+| Attacker IP | IP address of the attacker machine |
+| C2 Port | `4444` |
+| Suspicious Process | `python3` |
+| Suspicious File | `/tmp/update.py` |
+| Accessed Data | `/tmp/contrasenias.txt` |
+| Network Activity | Outbound TCP connection associated with `python3` |
 
-* Executed via:
+## SOC Analyst Skills Demonstrated
 
-id="t3x7na"
-python3
+- Linux incident investigation
+- SSH authentication log analysis
+- Brute-force detection
+- Process analysis
+- Network connection analysis
+- Host and network evidence correlation
+- C2 identification
+- IOC extraction
+- Attack timeline reconstruction
+- Incident response analysis
+- Security control recommendations
 
+## Security Recommendations
 
-➡️ Use of `/tmp` suggests evasion technique
+The investigation highlights several controls that can reduce the risk of similar incidents:
 
+- Harden SSH authentication and restrict authentication attempts.
+- Prefer public key authentication over passwords.
+- Disable direct root login.
+- Implement tools such as Fail2Ban.
+- Monitor SSH authentication logs through a SIEM.
+- Monitor suspicious process execution and script activity.
+- Restrict unnecessary outbound network connections.
+- Implement access controls and auditing for sensitive files.
 
+## Conclusion
 
-### 4. C2 Communication Established
+This lab demonstrates how a SOC analyst can reconstruct a Linux compromise by correlating authentication logs, process activity, and network connections.
 
-* Outbound connection detected:
+The investigation identified the progression from SSH brute-force activity to successful authentication, malicious code execution, C2 establishment, remote command execution, and access to sensitive information.
 
-id="7m7n4k"
-port 4444
+The exercise demonstrates the importance of analyzing host and network telemetry together rather than relying on a single indicator. Correlating these sources provides the context required to understand attacker behavior, identify IoCs, and support incident response decisions.
 
+## Full Investigation Report
 
-* Linked to malicious process
+The complete investigation, including detailed evidence and analysis, is available in the accompanying report:
 
-➡️ Active Command & Control channel
+**`linux-incident-ssh-c2-analysis.pdf`**
 
+## Tools
 
-
-### 5. Remote Command Execution
-
-* Attacker executed commands remotely via C2
-
-
-
-### 6. Data Access / Exfiltration
-
-* Accessed sensitive file:
-
-id="0d62vb"
-/tmp/contrasenias.txt
-
-
-➡️ Potential data exfiltration
-
-
-
-## 🔍 Evidence Collected
-
-* SSH logs (`journalctl -u ssh`)
-* Running processes (`ps aux`)
-* Active connections (`ss -tnp`)
-* Suspicious files in `/tmp`
-
-
-
-## 🚨 Indicators of Compromise (IoCs)
-
-* Suspicious IP (attacker machine)
-* Non-standard port usage: `4444`
-* Malicious script: `/tmp/update.py`
-* Suspicious process: `python3`
-* Unauthorized SSH access
-* Outbound C2 connection
-
-
-
-## 🧠 Attack Summary
-
-## 🎯 SOC Analyst Perspective
-
-From a defensive standpoint, this incident highlights the importance of correlating multiple data sources:
-
-* SSH logs revealed brute force activity and unauthorized access
-* Process monitoring identified execution of suspicious scripts
-* Network analysis exposed an active C2 channel
-* File access confirmed potential data exposure
-
-This type of correlation is critical in real SOC environments, where isolated events may not appear malicious until analyzed together.
-
-The incident demonstrates how lack of monitoring and control across authentication, execution, and network layers enables full system compromise.
-
-The attacker gained access via SSH brute force, executed a malicious script, and established a reverse connection to maintain remote control.
-
-The compromise demonstrates a full attack chain:
-
-* Initial access
-* Execution
-* Command & Control
-* Data access
-
-
-
-## 🛡️ Recommendations
-
-* Implement SSH hardening (keys, disable root login)
-* Deploy fail2ban to prevent brute force
-* Monitor logs continuously
-* Restrict outbound connections
-* Implement EDR solutions
-* Monitor execution in sensitive directories (`/tmp`)
-
-## 📎 Full Report
-[Download Full Incident Report](./linux-incident-ssh-c2-analysis.pdf)
+- Ubuntu Server 24.04
+- Kali Linux
+- OpenSSH
+- `journalctl`
+- `ps`
+- `ss`
