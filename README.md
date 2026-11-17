@@ -90,7 +90,7 @@ The investigation covered:
 
 **Validated capabilities:** SIEM operations, endpoint telemetry analysis, Windows security monitoring, Sysmon investigation, alert triage, detection analysis, and incident response.
 
-[View the Wazuh SIEM Lab](./wazuh-siem-lab)
+[View the Wazuh SIEM Lab](./wazuh-soc-lab)
 
 ## Capabilities Validated Through Labs
 
@@ -409,10 +409,12 @@ soc-analyst-portfolio/
 │   ├── README.md
 │   └── linux-incident-ssh-c2-analysis.pdf
 │
-├── wazuh-siem-lab/
+├── wazuh-soc-lab/
 │   ├── README.md
-│   └── ...
+│   └── documentation/
+│       └── Final-SOC-Lab-Report.pdf
 │
+├── LICENSE
 └── README.md
 ```
 

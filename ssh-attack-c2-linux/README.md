@@ -121,7 +121,7 @@ The exercise demonstrates the importance of analyzing host and network telemetry
 
 The complete investigation, including detailed evidence and analysis, is available in the accompanying report:
 
-**`linux-incident-ssh-c2-analysis.pdf`**
+**[linux-incident-ssh-c2-analysis.pdf](./linux-incident-ssh-c2-analysis.pdf)**
 
 ## Tools
 
