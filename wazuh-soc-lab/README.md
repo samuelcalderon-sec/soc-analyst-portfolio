@@ -277,4 +277,4 @@ This demonstrated an evidence-based and behavior-oriented investigation approach
 
 The complete technical analysis, including methodology, environment configuration, evidence, detailed investigation, timeline, correlation, limitations, MITRE ATT&CK mapping, impact assessment, and conclusions is available in:
 
-[**Final SOC Laboratory Report**](documentation/Informe-Final-Laboratorio-SOC.pdf)
+[**Final SOC Laboratory Report**](documentation/Final-SOC-Lab-Report.pdf)

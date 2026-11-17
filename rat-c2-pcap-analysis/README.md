@@ -99,7 +99,7 @@ The investigation demonstrates how a SOC analyst can use network telemetry to id
 
 The complete investigation, including detailed evidence and analysis, is available in the accompanying report:
 
-**`Incident-Analysis-C2-Traffic-PCAP.pdf`**
+**[Incident-Analysis-C2-Traffic-PCAP.pdf](./Incident-Analysis-C2-Traffic-PCAP.pdf)**
 
 ## Tools
 
