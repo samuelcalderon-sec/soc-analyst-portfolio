@@ -428,7 +428,7 @@ Systems Engineering Student | Cybersecurity | SOC / Blue Team
 
 Armenia, Colombia
 
-[LinkedIn](https://www.linkedin.com/in/samuel-calderon-candela-b792a836a/)
+[LinkedIn](https://www.linkedin.com/in/samuelcalderon-sec/)
 
 ## Disclaimer
 
